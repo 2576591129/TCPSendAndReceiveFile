@@ -1,16 +1,20 @@
+//**********************************************  system head *****************************************
 #include <iostream>
 #include <WinSock2.h>
 #include <fstream>
 #include < io.h> 
+#include <string>
 using namespace std;
 #pragma comment(lib,"Ws2_32.lib")
+//*******************************************************************************************************
 
-class ClientTer;
-
+//*******************************************define data lengths****************************************
 #define IP_LEN 20
 #define RECV_LEN 4096
 #define SEND_LEN 4096
 #define FILE_NAME_LEN 50
+//********************************************************************************************************
+
 
 struct FileInfo
 {
@@ -18,7 +22,7 @@ struct FileInfo
 	char file_name[FILE_NAME_LEN];
 	int file_size;
 };
-
+class ClientTer;
 ClientTer *instance =NULL;
 
 class ClientTer
@@ -50,6 +54,7 @@ private:
 	unsigned int port;
 	char ip[IP_LEN];
 	FileInfo info;
+private:
 	void SetPortIP(int port,char * ip)
 	{
 		this->port = port;
@@ -65,7 +70,8 @@ private:
 	{
 		char* pTemp = info.file_path;
 		pTemp = strrchr(pTemp,'\\');
-		memcpy(info.file_name,++pTemp,FILE_NAME_LEN);
+		if(pTemp == NULL)return;
+		memcpy(info.file_name,++pTemp,FILE_NAME_LEN-1);
 	}
 	void SaveFileSize()
 	{
@@ -91,12 +97,12 @@ public:
 
 	void SendFile(char * szPathName = 0)
 	{	
+		string input;
 		if(szPathName == 0)
 		{
-			char input[260];
 			cout<<"请输入文件名:";
 			cin>>input;
-			szPathName = input;
+			szPathName = (char*)input.c_str();
 		}
 		memcpy(info.file_path,szPathName,MAX_PATH);
 		SaveFileInfo();
@@ -116,22 +122,21 @@ public:
 	}
 	void RecvFile( char *path = 0)
 	{
-		string s ;
+		string s ;string input;
 		recv_num = recv(this->socket,(char*)&info,sizeof(info),0);
+		if(recv_num<=0)return;	
 		if (path == 0)
 		{
-			char input[260];
 			cout<<"请输入存放路径:";
 			cin>>input;
-			s = path = input;
-
-			char * temp = path;
-			for (int i = 0; i <strlen(path); i++ &&temp++ );
-			if(strcmp(temp,"\\"))
-			{
-				s +="\\";
-				path =(char *) s.c_str();
-			}
+		}
+		s = path =(char *) input.c_str();
+		char * temp = path;
+		for (int i = 0; i <strlen(path); i++ &&temp++ );
+		if(strcmp(temp,"\\"))
+		{
+			s +="\\";
+			path =(char *) s.c_str();
 		}
 		memcpy(info.file_path,path,MAX_PATH-FILE_NAME_LEN-1);
 		strcat_s(info.file_path,FILE_NAME_LEN,info.file_name);
@@ -160,12 +165,9 @@ public:
 		else
 			return NULL;
 	}
-
 	static void DestoryInstance()
 	{
 		delete instance;
 		instance =NULL;
 	}
-
-
 };
